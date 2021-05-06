@@ -190,3 +190,48 @@ axis(1, at=seq(1, 40, 3), labels=agg_Poland$Group.1[seq(1, 40, 3)])
 # 4.C.2.d.1.i	Spend Time Making Repetitive Motions
 # 4.C.3.d.3	Pace Determined by Speed of Equipment
 
+by_country <- function(country_list) 
+   {
+       countries = country_list
+       for(i in 1:length(countries)) {
+           dane = select(combined,c(contains(countries[i]),"ISCO","t_4A2a4", "t_4A2b2", "t_4A4a1", "TIME" ))
+           combined_2 <- left_join(all_data, dane, by = c("ISCO" = "ISCO"))
+           
+             # first task item
+             temp_mean <- wtd.mean(combined_2$t_4A2a4, combined_2[[paste0('share_',countries[i], '.x')]])
+             temp_sd <- wtd.var(combined_2$t_4A2a4, combined_2[[paste0('share_',countries[i], '.x')]]) %>% sqrt()
+             combined_2[[paste0('std_',countries[i], '_t_4A2a4')]] = (combined_2$t_4A2a4-temp_mean)/temp_sd
+             
+               # second task item
+               temp_mean <- wtd.mean(combined_2$t_4A2b2, combined_2[[paste0('share_',countries[i], '.x')]])
+               temp_sd <- wtd.var(combined_2$t_4A2b2, combined_2[[paste0('share_',countries[i], '.x')]]) %>% sqrt()
+               combined_2[[paste0('std_',countries[i], '_t_4A2b2')]] = (combined_2$t_4A2b2-temp_mean)/temp_sd
+               
+                 # third task item
+                 temp_mean <- wtd.mean(combined_2$t_4A4a1 , combined_2[[paste0('share_',countries[i], '.x')]])
+                 temp_sd <- wtd.var(combined_2$t_4A4a1 , combined_2[[paste0('share_',countries[i], '.x')]]) %>% sqrt()
+                 combined_2[[paste0('std_',countries[i], '_t_4A4a1')]]  = (combined_2$t_4A4a1 -temp_mean)/temp_sd
+                 
+                combined_2[[paste0(countries[i], "_NRCA")]]= combined_2[[paste0('std_',countries[i], '_t_4A2a4')]]+combined_2[[paste0('std_',countries[i], '_t_4A2b2')]]+combined_2[[paste0('std_',countries[i], '_t_4A4a1')]]
+                   
+                     # And we standardise NRCA in a similar way.
+                     temp_mean <- wtd.mean(combined_2[[paste0(countries[i], "_NRCA")]], combined_2[[paste0('share_',countries[i], '.x')]])
+                     temp_sd <- wtd.var(combined_2[[paste0(countries[i], "_NRCA")]], combined_2[[paste0('share_',countries[i], '.x')]]) %>% sqrt()
+                     combined_2[[paste0('std_',countries[i], "_NRCA")]] = (combined_2[[paste0(countries[i], "_NRCA")]]-temp_mean)/temp_sd
+                     
+                       # Step 1: multiply the value by the share of such workers.
+                       combined_2[[paste0('multip_',countries[i], "_NRCA")]] <- (combined_2[[paste0('std_',countries[i], "_NRCA")]] * combined_2[[paste0('share_',countries[i], '.x')]])
+                       
+                         # Step 2: sum it up (it basically becomes another weighted mean)
+                         agg <-aggregate(combined_2[[paste0('multip_',countries[i], "_NRCA")]] , by=list(combined_2$TIME.x),
+                                                               FUN=sum, na.rm=TRUE)
+                         
+                           # We can plot it now!
+                           plot(agg$x, xaxt="n")
+                         axis(1, at=seq(1, 40, 3), labels=agg$Group.1[seq(1, 40, 3)]) 
+                       }
+    }
+by_country(c("Belgium"))
+by_country(c("Poland", "Belgium", "Spain"))
+
+
